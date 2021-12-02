@@ -64,3 +64,31 @@ class ElfSub:
             depth_guage_readings=smooth_data,
             sliding_window_measure=sliding_window_measure)
         return increasing_values_count
+
+    def import_trajectory_data(self, data_path):
+        """ https://adventofcode.com/2021/day/2
+
+        >>> elf_help = ElfSub()
+        >>> elf_help.import_trajectory_data('data/day2.data')
+        (1996, 1022, 2039912, 972980, 1942068080)
+        """
+        horizontal = 0
+        depth1 = 0
+        depth2 = 0
+        aim = 0
+
+        f = open(data_path)
+        for line in f:
+            x = int(line.split(" ")[1])
+            if 'forward' in line:
+                horizontal += x
+                depth2 += (aim * x)
+            elif 'down' in line:
+                depth1 += x
+                aim += x
+            elif 'up' in line:
+                depth1 -= x
+                aim -= x
+            else:
+                print("Something unexpected in the data.")
+        return horizontal, depth1, horizontal * depth1, depth2, horizontal * depth2
