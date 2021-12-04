@@ -193,3 +193,88 @@ class ElfSub:
             else:
                 losers.append(data_pack[i])
         return winners, losers
+
+    def get_data_for_day4(self):
+        cards = []
+        f = open('data/day4.data')
+        big_text = ""
+        for line in f:
+            big_text += line
+        chops = big_text.split("\n\n")
+        for raw_card in chops:
+            card = []
+            rows = raw_card.split("\n")
+            for row in rows:
+                next_row = []
+                for card_number in row.split(" "):
+                    try:
+                        next_row.append(int(card_number.strip()))
+                    except ValueError:
+                        pass
+                card.append(next_row)
+            cards.append(card)
+        return cards
+
+    def bingo_cards4(self):
+        """
+        >>> elf_help = ElfSub()
+        >>> elf_help.bingo_cards4()
+        FIRST WIN! Card number 69 won on ping_pong_ball 4 with a score of 2496
+        LAST WIN!  Card number 19 won on ping_pong_ball 61 with a score of 25925
+        """
+        ping_pong_balls = [76, 69, 38, 62, 33, 48, 81, 2, 64, 21, 80, 90, 29, 99, 37, 15, 93, 46,
+                           75, 0, 89, 56, 58, 40, 92, 47, 8, 6, 54, 96, 12, 66, 83, 4, 70, 19, 17,
+                           5, 50, 52, 45, 51, 18, 27, 49, 71, 28, 86, 74, 77, 11, 20, 84, 72, 23,
+                           31, 16, 78, 91, 65, 87, 79, 73, 94, 24, 68, 63, 9, 88, 82, 30, 42, 60,
+                           13, 67, 85, 44, 59, 7, 53, 22, 1, 26, 41, 61, 55, 43, 39, 3, 35, 25, 34,
+                           57, 10, 14, 32, 97, 95, 36, 98]
+        cards = self.get_data_for_day4()
+        winning_cards = []
+        no_wins_yet = True
+
+        for ping_pong_ball in ping_pong_balls:
+            for card in range(len(cards)):
+                for row in range(len(cards[card])):
+                    for card_number in range(len(cards[card][row])):
+                        if cards[card][row][card_number] == ping_pong_ball:
+                            # Change the matching cell to zero so it doesn't participate in sums:
+                            cards[card][row][card_number] = 0
+                        if self.check_for_winning_conditions(cards[card]) is True:
+                            if no_wins_yet:
+                                score = self.score_the_card(cards[card], ping_pong_ball)
+                                print(f"FIRST WIN! Card number {card} won on ping_pong_ball"
+                                      f" {ping_pong_ball} with a score of {score}")
+                                no_wins_yet = False
+                            if cards[card] not in winning_cards:
+                                winning_cards.append(cards[card])
+                            if len(winning_cards) == len(cards):
+                                score = self.score_the_card(cards[card], ping_pong_ball)
+                                print(f"LAST WIN!  Card number {card} won on ping_pong_ball"
+                                      f" {ping_pong_ball} with a score of {score}")
+                                return
+
+    def score_the_card(self, winning_card, ping_pong_ball):
+        sum_of_uncalled_numbers = 0
+        for row in winning_card:
+            for card_number in row:
+                sum_of_uncalled_numbers += card_number
+        return sum_of_uncalled_numbers * ping_pong_ball
+
+    def check_for_winning_conditions(self, card):
+        """A zero sum on any row is a win."""
+        for row in card:
+            if sum(row) == 0:  # horizontal is easily computed.
+                return True
+
+        for column_value in range(5):
+            vertical = 0
+            for row in card:
+                vertical += row[column_value]
+            if vertical == 0:
+                return True
+
+        return False
+
+
+e = ElfSub()
+e.bingo_cards4()
