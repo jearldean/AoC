@@ -1,4 +1,6 @@
 # Beginning Advent of Code 2021. This looks fun.
+from pprint import pprint
+
 
 class ElfSub:
     """Help the elves deliver Santa's gifts via submarine."""
@@ -8,6 +10,8 @@ class ElfSub:
 
     def __init__(self):
         """ Might init instance variables in the future: self.things = things """
+
+    # -=-=-=-=-=- Day 1 -=-=-=-=-=-
 
     def smooth_the_data(self, data_path):
         """Open a file containing one data point on each line, convert each to int, return a list.
@@ -68,6 +72,8 @@ class ElfSub:
             sliding_window_measure=sliding_window_measure)
         return increasing_values_count
 
+    # -=-=-=-=-=- Day 2 -=-=-=-=-=-
+
     def import_trajectory_data(self, data_path):
         """ https://adventofcode.com/2021/day/2
 
@@ -95,6 +101,8 @@ class ElfSub:
             else:
                 print("Something unexpected in the data.")
         return horizontal, depth1, horizontal * depth1, depth2, horizontal * depth2
+
+    # -=-=-=-=-=- Day 3 -=-=-=-=-=-
 
     def get_data_for_day3(self):
         data_pack = []
@@ -194,6 +202,8 @@ class ElfSub:
                 losers.append(data_pack[i])
         return winners, losers
 
+    # -=-=-=-=-=- Day 4 -=-=-=-=-=-
+
     def get_data_for_day4(self):
         cards = []
         f = open('data/day4.data')
@@ -275,6 +285,104 @@ class ElfSub:
 
         return False
 
+    # -=-=-=-=-=- Day 5 -=-=-=-=-=-
 
-e = ElfSub()
-e.bingo_cards4()
+    def get_data_for_day5(self, filename, gridsize):
+        data = []
+        f = open(filename)
+        for line in f:
+            two_pieces = line.split(" -> ")
+            coordinates = []
+            for each_coord in two_pieces:
+                x_and_y = each_coord.split(",")
+                each_pair = []
+                for each_ in x_and_y:
+                    each_pair.append(int(each_.strip()))
+                coordinates.append(each_pair)
+            data.append(coordinates)
+        return data, gridsize
+
+    def grid_overlap(self, filename, gridsize):
+        """
+        >>> elf_help = ElfSub()
+        >>> elf_help.grid_overlap('data/day5a.data', 10)
+        12
+        >>> elf_help.grid_overlap('data/day5.data', 1000)
+        22083
+        """
+        input, grid = self.get_data_for_day5(filename, gridsize)
+        # print(input)  # [[[0, 9], [5, 9]], [[8, 0], [0, 8]],... ]
+        grid_field = []
+        bound = grid - 1  # Exceeding the bounds will give an IndexError
+        # Make a grid_field of gridsize x gridsize zeroes:
+        for x in range(grid):
+            y_values = []
+            for y in range(grid):
+                y_values.append(0)
+            grid_field.append(y_values)
+
+        # Now fill the grid_field with the line overlap values:
+        for aa in input:  # each coordinate pair: aa = [[0, 9], [5, 9]]
+            delta_x, delta_y = self.get_deltas(aa)
+            if delta_x == 0 or delta_y == 0:  # Vertical or Horizontal Line
+                line_length = abs((aa[0][0] - aa[1][0]) + (aa[0][1] - aa[1][1])) + 1
+                if delta_x < 0 or delta_y < 0:
+                    aa = self.flip_the_direction(aa)
+                    delta_x, delta_y = self.get_deltas(aa)
+                for step in range(line_length):
+                    # print(aa, delta_x, delta_y, line_length, step)
+                    if delta_x == 0:  # | vertical line   [[7, 0], [7, 4]]
+                        grid_field[min((aa[0][1] + step), bound)][aa[0][0]] += 1
+                    if delta_y == 0:  # – horizontal line [[0, 9], [5, 9]]
+                        grid_field[aa[1][1]][min((aa[0][0] + step), bound)] += 1
+            # Now add Diagonals:
+            if abs(delta_x) == abs(delta_y):  # slope = 45°, / or \ diagonal line
+                line_length = abs(aa[0][0] - aa[1][0]) + 1
+                if (delta_x < 0 and delta_y < 0) or (delta_x < 0 and delta_y > 0):
+                    aa = self.flip_the_direction(aa)
+                    delta_x, delta_y = self.get_deltas(aa)
+                for step in range(line_length):
+                    if (delta_x > 0 and delta_y > 0):  # \ slope line  [[0, 0], [8, 8]]
+                        grid_field[min((aa[0][1] + step), bound)][
+                            min((aa[0][0] + step), bound)] += 1
+                    if (delta_x > 0 and delta_y < 0):  # / slope line  [[5, 5], [8, 2]]
+                        grid_field[min((aa[0][1] - step), bound)][
+                            min((aa[0][0] + step), bound)] += 1
+
+        score = self.get_score(grid_field)
+        return score
+
+    def get_score(self, grid_field):
+        score = 0
+        for xx in grid_field:
+            for yy in xx:
+                if yy > 1:
+                    score += 1
+        return score
+
+    def get_deltas(self, aa):
+        """
+        >>> elf_help = ElfSub()
+        >>> elf_help.get_deltas([[1, 2], [3, 4]])
+        (2, 2)
+        """
+        delta_x = aa[1][0] - aa[0][0]
+        delta_y = aa[1][1] - aa[0][1]
+        return delta_x, delta_y
+
+    def flip_the_direction(self, aa):
+        """
+        [[8, 8], [0, 0]] creates the same line as [[0, 0], [8, 8]]
+        Let's use the same calculation for either.
+
+        >>> elf_help = ElfSub()
+        >>> elf_help.flip_the_direction([[1, 2], [3, 4]])
+        [[3, 4], [1, 2]]
+        """
+        return [aa[1], aa[0]]
+
+
+if __name__ == "__main__":
+    elf_help = ElfSub()
+    score = elf_help.grid_overlap('data/day5a.data', 10)
+    print(score)
