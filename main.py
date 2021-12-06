@@ -421,14 +421,13 @@ class ElfSub:
         for each_day in range(days):
             # Save these values outside of the dict we're going to modify:
             previous_day_array = fish_counts.copy()
-            fish_counts[8] = previous_day_array.get(0, 0)
-            fish_counts[7] = previous_day_array.get(8, 0)
-            fish_counts[6] = previous_day_array.get(7, 0) + previous_day_array.get(0, 0)
-            fish_counts[5] = previous_day_array.get(6, 0)
-            fish_counts[4] = previous_day_array.get(5, 0)
-            fish_counts[3] = previous_day_array.get(4, 0)
-            fish_counts[2] = previous_day_array.get(3, 0)
-            fish_counts[1] = previous_day_array.get(2, 0)
-            fish_counts[0] = previous_day_array.get(1, 0)
+            for dd in range(9):
+                if dd == 8:
+                    fish_counts[dd] = previous_day_array.get(0, 0)
+                elif dd == 6:
+                    fish_counts[dd] = (previous_day_array.get(dd + 1, 0) +
+                                       previous_day_array.get(0, 0))
+                else:
+                    fish_counts[dd] = previous_day_array.get(dd + 1, 0)
 
         return sum(fish_counts.values())
