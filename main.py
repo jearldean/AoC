@@ -414,38 +414,21 @@ class ElfSub:
         return len(data)
         """
         data = self.get_data_for_day6(filename)
-        fish_counts = {8: 0, 7: 0, 6: 0, 5: 0, 4: 0, 3: 0, 2: 0, 1: 0, 0: 0}
+        fish_counts = {}
         for each_fish in data:
             fish_counts[each_fish] = fish_counts.get(each_fish, 0) + 1
-        # print(fish_counts)  # {3: 2, 4: 1, 1: 1, 2: 1}
 
         for each_day in range(days):
             # Save these values outside of the dict we're going to modify:
-            eight = fish_counts[8]
-            seven = fish_counts[7]
-            six = fish_counts[6]
-            five = fish_counts[5]
-            four = fish_counts[4]
-            three = fish_counts[3]
-            two = fish_counts[2]
-            one = fish_counts[1]
-            zero = fish_counts[0]  # zero is special
-
-            # count-down the non-special values:
-            fish_counts[8] = zero  # zero is special
-            fish_counts[7] = eight
-            fish_counts[6] = seven + zero  # zero is special
-            fish_counts[5] = six
-            fish_counts[4] = five
-            fish_counts[3] = four
-            fish_counts[2] = three
-            fish_counts[1] = two
-            fish_counts[0] = one
+            previous_day_array = fish_counts.copy()
+            fish_counts[8] = previous_day_array.get(0, 0)
+            fish_counts[7] = previous_day_array.get(8, 0)
+            fish_counts[6] = previous_day_array.get(7, 0) + previous_day_array.get(0, 0)
+            fish_counts[5] = previous_day_array.get(6, 0)
+            fish_counts[4] = previous_day_array.get(5, 0)
+            fish_counts[3] = previous_day_array.get(4, 0)
+            fish_counts[2] = previous_day_array.get(3, 0)
+            fish_counts[1] = previous_day_array.get(2, 0)
+            fish_counts[0] = previous_day_array.get(1, 0)
 
         return sum(fish_counts.values())
-
-
-if __name__ == "__main__":
-    elf_help = ElfSub()
-    data = elf_help.lanternfish_spawning_cycle('data/day6.data', 256)
-    print(data)
