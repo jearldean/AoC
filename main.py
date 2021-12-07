@@ -431,3 +431,31 @@ class ElfSub:
                     fish_counts[dd] = previous_day_array.get(dd + 1, 0)
 
         return sum(fish_counts.values())
+
+    # -=-=-=-=-=- Day 7 -=-=-=-=-=-
+
+    def crab_sub_fuel_economization(self, filename):
+        """
+        >>> elf_help = ElfSub()
+        >>> elf_help.crab_sub_fuel_economization('data/day7a.data')
+        168
+        """
+        data = self.get_data_for_day6(filename)
+        fuel_usage_dict = {}
+        horizontal_positions = len(data)
+        for horizontal_position in range(max(data) + 1):
+            fuel_cost = 0
+            for ii in data:
+                #  the first step costs 1, the second step costs 2, the third step costs 3, and so on.
+                distance = abs(ii - horizontal_position)
+                for dd in range(distance + 1):
+                    fuel_cost += dd
+            fuel_usage_dict[horizontal_position] = fuel_cost
+            # print("Calculating", horizontal_position, "out of", max(data) + 1)
+        return min(fuel_usage_dict.values())
+
+
+if __name__ == "__main__":
+    elf_help = ElfSub()
+    data = elf_help.crab_sub_fuel_economization('data/day7.data')
+    print(data)
