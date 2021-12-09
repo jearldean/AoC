@@ -454,8 +454,172 @@ class ElfSub:
             # print("Calculating", horizontal_position, "out of", max(data) + 1)
         return min(fuel_usage_dict.values())
 
+    # -=-=-=-=-=- Day 8 -=-=-=-=-=-
 
-if __name__ == "__main__":
-    elf_help = ElfSub()
-    data = elf_help.crab_sub_fuel_economization('data/day7.data')
-    print(data)
+    def day8_part1(self, filename):
+        """
+        >>> elf_help = ElfSub()
+        >>> elf_help.day8_part1('data/day8a.data')
+        26
+        >>> elf_help.day8_part1('data/day8.data')
+        470
+        """
+        f = open(filename)
+        counts_of_unique = 0
+        for line in f:
+            left_and_right = line.split("|")
+            for word in left_and_right[1].strip().split(" "):
+                if len(word) in [2, 3, 4, 7]:
+                    counts_of_unique += 1
+        return counts_of_unique
+
+    def day8_part2(self, filename):
+        """
+        >>> elf_help = ElfSub()
+        >>> elf_help.day8_part2('data/day8a.data')
+        61229
+        >>> elf_help.day8_part2('data/day8.data')
+        989396
+        """
+        nixie_tubes = {0: ['a', 'b', 'c', 'e', 'f', 'g'],
+                       1: ['c', 'f'],
+                       2: ['a', 'c', 'd', 'e', 'g'],
+                       3: ['a', 'c', 'd', 'f', 'g'],
+                       4: ['b', 'c', 'd', 'f'],
+                       5: ['a', 'b', 'd', 'f', 'g'],
+                       6: ['a', 'b', 'd', 'e', 'f', 'g'],
+                       7: ['a', 'c', 'f'],
+                       8: ['a', 'b', 'c', 'd', 'e', 'f', 'g'],
+                       9: ['a', 'b', 'c', 'd', 'f', 'g']}
+
+        right_side_total = 0
+
+        f = open(filename)
+        for line in f:
+            # First create the answer_key from left_side data:
+            one_line_of_left_words = []
+            left_and_right = line.split("|")
+            for word in left_and_right[0].strip().split(" "):
+                one_line_of_left_words.append(word)
+            answer_key = self.get_the_answer_key(one_line_of_left_words)
+
+            right_number_as_string = ""
+            # Now decode right_side using the answer_key:
+            for word in left_and_right[1].strip().split(" "):
+                build_one_digit = set()
+                for letter in word:
+                    for answer_key_letter in answer_key:
+                        if answer_key[answer_key_letter] == set(letter):
+                            build_one_digit.add(answer_key_letter)
+                for nixie_tube_number in nixie_tubes:
+                    if set(nixie_tubes[nixie_tube_number]) == build_one_digit:
+                        right_number_as_string += str(nixie_tube_number)
+            right_side_total += int(right_number_as_string)
+        return right_side_total
+
+    def get_the_answer_key(self, one_line_sorty):
+        """
+        >>> elf_help = ElfSub()
+        >>> elf_help.get_the_answer_key([['a', 'b', 'c', 'f', 'g'], \
+                                         ['c', 'f', 'g'], \
+                                         ['a', 'b', 'c', 'd', 'e', 'f', 'g'], \
+                                         ['a', 'b', 'c', 'e', 'g'], ['f', 'g'], \
+                                         ['a', 'b', 'c', 'd', 'e', 'g'], \
+                                         ['a', 'e', 'f', 'g'], \
+                                         ['a', 'b', 'c', 'e', 'f', 'g'], \
+                                         ['a', 'b', 'c', 'd', 'f'], \
+                                         ['b', 'c', 'd', 'e', 'f', 'g']])
+        {'a': {'c'}, 'b': {'e'}, 'd': {'a'}, 'g': {'b'}, 'f': {'g'}, 'c': {'f'}, 'e': {'d'}}
+        """
+        known_lengths = [6, 2, 5, 5, 4, 5, 6, 3, 7, 6]
+        # unique lengths    1,       4,       7, 8
+        # shared lengths 0,                6,       9
+        # shared lengths2      2, 3,    5
+
+        possible_values = {2: 1,  # length: possible values
+                           3: 7,
+                           4: 4,
+                           5: [2, 3, 5],
+                           6: [0, 6, 9],
+                           7: 8}
+
+        lengths_dict = {}  # structured like possible_values
+        answer_dict = {}
+        for number_array in one_line_sorty:
+            if len(number_array) == 2:
+                lengths_dict[1] = number_array
+            elif len(number_array) == 3:
+                lengths_dict[7] = number_array
+            elif len(number_array) == 4:
+                lengths_dict[4] = number_array
+            elif len(number_array) == 5:
+                len_five = lengths_dict.get(5, [])
+                len_five.append(number_array)
+                lengths_dict[5] = len_five
+            elif len(number_array) == 6:
+                len_six = lengths_dict.get(6, [])
+                len_six.append(number_array)
+                lengths_dict[6] = len_six
+            elif len(number_array) == 7:
+                lengths_dict[8] = number_array
+        # lengths_dict = {1: ['f', 'g'],
+        #                 4: ['a', 'e', 'f', 'g'],
+        #                 5: [['a', 'b', 'c', 'f', 'g'],
+        #                     ['a', 'b', 'c', 'e', 'g'],
+        #                     ['a', 'b', 'c', 'd', 'f']],
+        #                 6: [['a', 'b', 'c', 'd', 'e', 'g'],
+        #                     ['a', 'b', 'c', 'e', 'f', 'g'],
+        #                     ['b', 'c', 'd', 'e', 'f', 'g']],
+        #                 7: ['c', 'f', 'g'],
+        #                 8: ['a', 'b', 'c', 'd', 'e', 'f', 'g']}
+
+        # A 7 ('acf') minus 1 ('cf') will give you 'a':
+        answer_dict['a'] = set(lengths_dict[7]) - set(lengths_dict[1])  # 'a' for sure
+        answer_dict['b'] = set(lengths_dict[4]) - set(lengths_dict[1])  # could be 'b' or 'd'
+        answer_dict['d'] = set(lengths_dict[4]) - set(lengths_dict[1])  # could be 'b' or 'd'
+
+        counts_are_keys235 = self.three_item_handling(lengths_dict[5])
+        """2: ['A',      'c', 'd', 'e',      'g'],  # Caps are KNOWN
+           3: ['A',      'c', 'd',      'f', 'g'],
+           5: ['A', 'b',      'd',      'f', 'g'],"""
+        # If you have length 3, you are 'a', 'd' or 'g'. And we already know 'a'.
+        d_or_g = set(counts_are_keys235[3]) - answer_dict['a']
+        possible_ds = answer_dict['d']
+        # 'd' is the shared item from answer_dict['d'] (possible_ds) and d_or_g:
+        answer_dict['d'] = d_or_g & possible_ds
+        # 'g' falls apart because we know 'a' and 'd':
+        answer_dict['g'] = d_or_g - answer_dict['d']
+        possible_bs = answer_dict['b']  # could be 'b' or 'd', but now we know 'd':
+        answer_dict['b'] = possible_bs - answer_dict['d']
+
+        counts_are_keys069 = self.three_item_handling(lengths_dict[6])
+        """{0: ['A', 'B', 'c',      'e', 'f', 'G'],  # Caps are KNOWN
+            6: ['A', 'B',      'D', 'e', 'f', 'G'],
+            9: ['A', 'B', 'c', 'D',      'f', 'G']}"""
+        # Union all KNOWN quantities:
+        what_we_know = answer_dict['a'] | answer_dict['b'] | answer_dict['d'] | answer_dict['g']
+        # All the other lengths of 3 are known. Only 'f' is left:
+        answer_dict['f'] = set(counts_are_keys069[3]) - what_we_know
+        c_or_e = set(counts_are_keys069[2]) - what_we_know - answer_dict['f']
+        # Intersection. 1 'cf' and 4 'bcdf' both don't contain 'e'. Now we know 'c':
+        answer_dict['c'] = c_or_e & set(lengths_dict[4]) & set(lengths_dict[1])
+        answer_dict['e'] = c_or_e - answer_dict['c']  # 'e' is what's left over. Now we have all 7!
+
+        return answer_dict
+
+    def three_item_handling(self, a_list_of_3_lists):
+        """
+        >>> elf_help = ElfSub()
+        >>> elf_help.three_item_handling([['c', 'd', 'e', 'f', 'g'], \
+                                          ['b', 'c', 'd', 'e', 'f'], \
+                                          ['a', 'b', 'c', 'd', 'f']])
+        {1: ['a', 'g'], 2: ['b', 'e'], 3: ['c', 'd', 'f']}
+        """
+        flatten_3_lists = [item for sublist in a_list_of_3_lists for item in sublist]
+
+        counts_are_keys = {}
+        for each_letter in 'abcdefg':
+            letter_count = flatten_3_lists.count(each_letter)
+            counts_are_keys.setdefault(letter_count, []).append(each_letter)
+
+        return counts_are_keys
