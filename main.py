@@ -8,6 +8,8 @@ class ElfSub:
     ox = "0b"  # I only vote for winners in my pack
     co = "0b"  # I only vote for losers in my pack
 
+    neighbor_coordinates_in_basin = []
+
     def __init__(self):
         """ Might init instance variables in the future: self.things = things """
 
@@ -292,14 +294,14 @@ class ElfSub:
         f = open(filename)
         for line in f:
             two_pieces = line.split(" -> ")
-            coordinates = []
+            indexs = []
             for each_coord in two_pieces:
                 x_and_y = each_coord.split(",")
                 each_pair = []
                 for each_ in x_and_y:
                     each_pair.append(int(each_.strip()))
-                coordinates.append(each_pair)
-            data.append(coordinates)
+                indexs.append(each_pair)
+            data.append(indexs)
         return data, gridsize
 
     def grid_overlap(self, filename, gridsize):
@@ -322,7 +324,7 @@ class ElfSub:
             grid_field.append(y_values)
 
         # Now fill the grid_field with the line overlap values:
-        for aa in input:  # each coordinate pair: aa = [[0, 9], [5, 9]]
+        for aa in input:  # each index pair: aa = [[0, 9], [5, 9]]
             delta_x, delta_y = self.get_deltas(aa)
             if delta_x == 0 or delta_y == 0:  # Vertical or Horizontal Line
                 line_length = abs((aa[0][0] - aa[1][0]) + (aa[0][1] - aa[1][1])) + 1
@@ -621,3 +623,139 @@ class ElfSub:
             counts_are_keys.setdefault(letter_count, []).append(each_letter)
 
         return counts_are_keys
+
+    # -=-=-=-=-=- Day 9 -=-=-=-=-=-
+
+    def get_data_for_day9(self, filename):
+        data = []
+        f = open(filename)
+        for line in f:
+            data.append(line.strip())
+        return data
+
+    def day9_part1(self, filename):
+        """
+        >>> elf_help = ElfSub()
+        >>> elf_help.day9_part1('data/day9a.data')
+        15
+        >>> elf_help.day9_part1('data/day9.data')
+        535
+        """
+        data = self.get_data_for_day9(filename)
+
+        sum_of_low_points = 0
+        for row_index, line in enumerate(data):
+            len_chars = len(line)
+            for char_index in range(len_chars):
+                number = line[char_index]
+                neighbors, _ = self.my_neighbors_are(row_index, char_index, len_chars, data)
+                sum_of_low_points += self.evaluate_number(int(number), neighbors)
+        return sum_of_low_points
+
+    def my_neighbors_are(self, row_index, char_index, len_chars, data):
+        len_rows = len(data)
+        if row_index == 0 and char_index == 0:  # top left corner: 2 neighbors
+            return [int(data[0][1]),
+                    int(data[1][0])], [[0, 1], [1, 0]]
+        elif row_index == 0 and char_index == len_chars - 1:  # top right corner: 2 neighbors
+            return [int(data[0][char_index - 1]),
+                    int(data[1][char_index])], [[0, char_index - 1], [1, char_index]]
+        elif row_index == 0:  # top row, middle: 3 neighbors
+            return [int(data[0][char_index - 1]),
+                    int(data[1][char_index]),
+                    int(data[0][char_index + 1])], [[0, char_index - 1], [1, char_index],
+                                                    [0, char_index + 1]]
+        elif row_index == len_rows - 1 and char_index == 0:  # bottom left corner: 2 neighbors
+            return [int(data[row_index][1]),
+                    int(data[row_index - 1][0])], [[row_index, 1], [row_index - 1, 0]]
+        elif row_index == len_rows - 1 and char_index == len_chars - 1:  # bottom right corner: 2 neighbors
+            return [int(data[row_index][char_index - 1]),
+                    int(data[row_index - 1][char_index])], [[row_index, char_index - 1],
+                                                            [row_index - 1, char_index]]
+        elif row_index == len_rows - 1:  # bottom row, middle: 3 neighbors
+            return [int(data[row_index][char_index - 1]),
+                    int(data[row_index - 1][char_index]),
+                    int(data[row_index][char_index + 1])], [[row_index, char_index - 1],
+                                                            [row_index - 1, char_index],
+                                                            [row_index, char_index + 1]]
+        elif char_index == 0:  # middle left side: 3 neighbors
+            return [int(data[row_index - 1][0]),
+                    int(data[row_index][1]),
+                    int(data[row_index + 1][0])], [[row_index - 1, 0], [row_index, 1],
+                                                   [row_index + 1, 0]]
+        elif char_index == len_chars - 1:  # middle right side: 3 neighbors
+            return [int(data[row_index - 1][char_index]),
+                    int(data[row_index][char_index - 1]),
+                    int(data[row_index + 1][char_index])], [[row_index - 1, char_index],
+                                                            [row_index, char_index - 1],
+                                                            [row_index + 1, char_index]]
+        else:  # middle of the pack: 4 neighbors
+            return [int(data[row_index - 1][char_index]),
+                    int(data[row_index][char_index - 1]),
+                    int(data[row_index][char_index + 1]),
+                    int(data[row_index + 1][char_index])], [[row_index - 1, char_index],
+                                                            [row_index, char_index - 1],
+                                                            [row_index, char_index + 1],
+                                                            [row_index + 1, char_index]]
+
+    def evaluate_number(self, number, neighbors):
+        """
+        >>> elf_help = ElfSub()
+        >>> elf_help.evaluate_number(9, [4, 3, 2, 1])
+        0
+        >>> elf_help.evaluate_number(1, [2, 2, 2, 2])
+        2
+        """
+        risk_level = 0
+        if number < min(neighbors):
+            # Unsure if ties are in or out. For now, they're out.
+            risk_level = number + 1
+        return risk_level
+
+    def day9_part2(self, filename):
+        """
+        >>> elf_help = ElfSub()
+        >>> elf_help.day9_part2('data/day9a.data')
+        1134
+        >>> elf_help.day9_part2('data/day9.data')
+        1122700
+        """
+        data = self.get_data_for_day9(filename)
+
+        basin_coordinates = []
+        # try getting basin coordinates first:
+        for row_index, line in enumerate(data):
+            len_chars = len(line)
+            for char_index in range(len_chars):
+                number = line[char_index]
+                neighbors, _ = self.my_neighbors_are(row_index, char_index, len_chars, data)
+                if self.evaluate_number(int(number), neighbors) > 0:
+                    basin_coordinates.append([row_index, char_index])
+
+        basin_sizes = []
+        for basin in basin_coordinates:
+            self.neighbor_coordinates_in_basin = []  # Wipe it out.
+            self.uh_oh_recursion(basin, len_chars, data)
+            basin_sizes.append(len(self.neighbor_coordinates_in_basin))
+
+        basin_sizes.sort()
+        basin_top3_product = basin_sizes[-1] * basin_sizes[-2] * basin_sizes[-3]
+        return basin_top3_product
+
+    def uh_oh_recursion(self, coordinates, len_chars, data):
+        neighbor_values, neighbor_coordinates = self.my_neighbors_are(
+            coordinates[0], coordinates[1], len_chars, data)
+        for index, value in enumerate(neighbor_values):
+            if neighbor_coordinates[index] in self.neighbor_coordinates_in_basin:
+                pass  # Skip it; we already checked this one.
+            elif value < 9:  # Coordinate is part of a basin.
+                self.neighbor_coordinates_in_basin.append(neighbor_coordinates[index])
+                self.uh_oh_recursion(neighbor_coordinates[index], len_chars, data)
+            else:
+                pass  # Skip it; dead end.
+
+
+if __name__ == "__main__":
+    elf_help = ElfSub()
+    data = elf_help.day9_part2('data/day9.data')
+    print(data)
