@@ -10,8 +10,16 @@ class ElfSub:
 
     neighbor_coordinates_in_basin = []
 
+    lefties = ["(", "{", "[", "<"]
+    righties = [")", "}", "]", ">"]
+    partners = {"(": ")", ")": "(",
+                "{": "}", "}": "{",
+                "[": "]", "]": "[",
+                "<": ">", ">": "<"}
+
     def __init__(self):
         """ Might init instance variables in the future: self.things = things """
+        self.first_illegal_char = None
 
     # -=-=-=-=-=- Day 1 -=-=-=-=-=-
 
@@ -754,8 +762,133 @@ class ElfSub:
             else:
                 pass  # Skip it; dead end.
 
+    # -=-=-=-=-=- Day 10 -=-=-=-=-=-
+
+    def syntax_checker(self, filename):
+        """
+        >>> elf_help = ElfSub()
+        >>> elf_help.syntax_checker('data/day10a.data')
+        (26397, ['[({([[{{', '({[<{(', '((((<{<{{', '<{[{[{{[[', '<{(['])
+        >>> elf_help.autocomplete_tool(['[({([[{{', '({[<{(', '((((<{<{{', '<{[{[{{[[', '<{(['])
+        288957
+        >>> elf_help.syntax_checker('data/day10.data')[0]
+        369105
+        """
+        data = self.get_data_for_day9(filename)  # Reuse some code.
+
+        points = {")": 3,
+                  "]": 57,
+                  "}": 1197,
+                  ">": 25137}
+        illegals_count = {}
+        incomplete_lines = []
+
+        for line in data:
+            self.first_illegal_char = None
+            first_illegal_char = self.find_first_illegal_char(line)
+            if first_illegal_char not in self.righties:
+                incomplete_lines.append(first_illegal_char)
+            illegals_count[first_illegal_char] = illegals_count.get(first_illegal_char, 0) + 1
+
+        total_points = 0
+        for illegal_char in illegals_count:
+            if illegal_char in self.righties:
+                total_points += points[illegal_char] * illegals_count[illegal_char]
+
+        return total_points, incomplete_lines
+
+    def find_first_illegal_char(self, line):
+        """
+        Look for the first right-side char, or closer:
+        {([(<{}[<>[]}>{[]{[(<()>
+        Look to the left for it’s mate.
+        If mates, remove those two chars from the string and try again:
+        {([(<{}[<>[]}>{[]{[(<()>  # Remove {}
+        {([(<[<>[]}>{[]{[(<()>    # Remove <>
+        {([(<[[]}>{[]{[(<()>      # Remove []
+        {([(<[}>{[]{[(<()>        # Yuck! [}  Illegal Pairing. Stop loop and report '}'.
+        """
+        if all(char in self.lefties for char in line):
+            self.first_illegal_char = line
+            return self.first_illegal_char
+        for index, char in enumerate(line):
+            if self.first_illegal_char:
+                return self.first_illegal_char
+            if char in self.lefties:
+                pass
+            elif char in self.righties and char != self.partners[line[index - 1]]:
+                self.first_illegal_char = char
+                return self.first_illegal_char
+            else:
+                self.find_first_illegal_char(line[:index - 1] + line[index + 1:])
+
+    def autocomplete_tool(self, incomplete_lines):
+        """
+        Incomplete lines don't have any incorrect characters - instead, they're missing some
+        closing characters at the end of the line. To repair the navigation subsystem,
+        you just need to figure out the sequence of closing characters that complete all
+        open chunks in the line.
+        """
+        autocomplete_results = []
+        for incomplete_line in incomplete_lines:
+            autocomplete_result = ""
+            incomplete_line_reversed = incomplete_line[::-1]
+            for char in incomplete_line_reversed:
+                autocomplete_result += self.partners[char]
+            autocomplete_results.append(autocomplete_result)
+
+        return self.score_autocomplete_results(autocomplete_results)
+
+    def score_autocomplete_results(self, autocomplete_results):
+        """
+        Autocomplete tools are an odd bunch: the winner is found by sorting all of the
+        scores and then taking the middle score.
+
+        >>> elf_help = ElfSub()
+        >>> elf_help.score_autocomplete_results(['}}]])})]', ')}>]})', '}}>}>))))', ']]}}]}]}>', '])}>'])
+        288957
+        """
+        scores = []
+        for completion_string in autocomplete_results:
+            scores.append(self.score_one_completion_string(completion_string))
+        scores.sort()
+        index_to_hit = (len(scores) - 1) / 2  # 9 results...0-8 --> index=4
+        return scores[int(index_to_hit)]
+
+    def score_one_completion_string(self, completion_string):
+        """
+        For sample '])}>'
+        Start with a total score of 0.
+        Multiply the total score by 5 to get 0, then add the value of ] (2) to get a new total score of 2.
+        Multiply the total score by 5 to get 10, then add the value of ) (1) to get a new total score of 11.
+        Multiply the total score by 5 to get 55, then add the value of } (3) to get a new total score of 58.
+        Multiply the total score by 5 to get 290, then add the value of > (4) to get a new total score of 294.
+
+        >>> elf_help = ElfSub()
+        >>> elf_help.score_one_completion_string('}}]])})]')
+        288957
+        >>> elf_help.score_one_completion_string(')}>]})')
+        5566
+        >>> elf_help.score_one_completion_string('}}>}>))))')
+        1480781
+        >>> elf_help.score_one_completion_string(']]}}]}]}>')
+        995444
+        >>> elf_help.score_one_completion_string('])}>')
+        294
+        """
+        points = {")": 1,
+                  "]": 2,
+                  "}": 3,
+                  ">": 4}
+        total_score = 0
+        multiplier = 5
+        for i in range(len(completion_string)):
+            total_score = (total_score * multiplier) + points[completion_string[i]]
+        return total_score
+
 
 if __name__ == "__main__":
     elf_help = ElfSub()
-    data = elf_help.day9_part2('data/day9.data')
-    print(data)
+    total_points, incomplete_lines = elf_help.syntax_checker('data/day10.data')
+    total_score = elf_help.autocomplete_tool(incomplete_lines)
+    print(total_score)
