@@ -1,5 +1,6 @@
 # Beginning Advent of Code 2021. This looks fun.
 from pprint import pprint
+from random import choice
 
 
 class ElfSub:
@@ -16,6 +17,9 @@ class ElfSub:
                 "{": "}", "}": "{",
                 "[": "]", "]": "[",
                 "<": ">", ">": "<"}
+
+    im_going_critical = []
+    i_have_been_served = []
 
     def __init__(self):
         """ Might init instance variables in the future: self.things = things """
@@ -886,9 +890,289 @@ class ElfSub:
             total_score = (total_score * multiplier) + points[completion_string[i]]
         return total_score
 
+    # -=-=-=-=-=- Day 11 -=-=-=-=-=-
+
+    def get_data_for_day11(self, filename):
+        data = []
+        f = open(filename)
+        for line in f:
+            one_line_list = []
+            for octopus in line:
+                if octopus in '0123456789':
+                    one_line_list.append(int(octopus))
+            data.append(one_line_list)
+        return data
+
+    def octo_flash(self, filename, cycles):
+        """
+        >>> elf_help = ElfSub()
+        >>> elf_help.octo_flash('data/day11a.data', 10)
+        204
+        >>> elf_help.octo_flash('data/day11.data', 10)
+        196
+        >>> elf_help.octo_flash('data/day11.data', 400)
+        364
+        """
+        data_pack = self.get_data_for_day11(filename)
+        total_flashes = 0
+        loop_number = 0
+        for loop in range(cycles):
+            loop_number += 1
+            self.im_going_critical = []
+            self.i_have_been_served = []
+            data_pack = self.increment_all_cells(data_pack)
+            while self.im_going_critical:
+                for coordinate in self.im_going_critical:
+                    neighbor_coordinates, _ = self.who_are_my_neighbors(data_pack, coordinate)
+                    for neighbor_coordinate in neighbor_coordinates:
+                        data_pack = self.increment_one_cell(data_pack, neighbor_coordinate)
+                    self.i_have_been_served.append(coordinate)
+                    self.im_going_critical.remove(coordinate)
+            data_pack, score = self.score_this_grid(data_pack)
+            if score == 100:
+                return loop_number
+            total_flashes += score
+        return total_flashes
+
+    def increment_all_cells(self, data_pack):
+        for line_index in range(len(data_pack)):
+            for value_index in range(len(data_pack[line_index])):
+                data_pack = self.increment_one_cell(data_pack, [line_index, value_index])
+        return data_pack
+
+    def increment_one_cell(self, data_pack, coordinate):
+        line_index, value_index = coordinate
+        if data_pack[line_index][value_index] == 9:  # I'm going critical
+            if coordinate not in self.im_going_critical and coordinate not in self.i_have_been_served:
+                self.im_going_critical.append(coordinate)
+        data_pack[line_index][value_index] += 1
+        return data_pack
+
+    def who_are_my_neighbors(self, data_pack, coordinate):
+        """
+        Includes Diagonals. Doesn't require defined boundaries of the data_pack.
+        """
+        upper_bound = len(data_pack[0])  # Just calculate it.
+        lower_bound = -1  # Don't go off the grid
+        line_index, value_index = coordinate
+
+        line_index_up = line_index - 1 if line_index - 1 > lower_bound else 5000  # Definite Indexerror
+        line_index_down = line_index + 1 if line_index + 1 < upper_bound else 5000  # Definite Indexerror
+        value_index_left = value_index - 1 if value_index - 1 > lower_bound else 5000  # Definite Indexerror
+        value_index_right = value_index + 1 if value_index + 1 < upper_bound else 5000  # Definite Indexerror
+
+        square_addresses = [[line_index_up, value_index_left],
+                            [line_index_up, value_index],
+                            [line_index_up, value_index_right],
+                            [line_index, value_index_left],
+                            # [line_index, value_index,  # Paul Lynde, center square!
+                            [line_index, value_index_right],
+                            [line_index_down, value_index_left],
+                            [line_index_down, value_index],
+                            [line_index_down, value_index_right]]
+
+        my_neighbor_coordinates = []
+        my_neighbor_values = []
+        for each_combo in square_addresses:
+            try:
+                line, value = each_combo
+                data_pack[line][value]
+                my_neighbor_values.append(data_pack[line][value])
+                my_neighbor_coordinates.append([line, value])
+            except IndexError:
+                pass
+
+        return my_neighbor_coordinates, my_neighbor_values
+
+    def score_this_grid(self, data_pack):
+        score = 0
+        coordinates = self.coordinates_greater_than_9(data_pack)
+        for coordinate in coordinates:
+            line_index, value_index = coordinate
+            data_pack[line_index][value_index] = 0
+        score += len(coordinates)
+        return data_pack, score
+
+    def coordinates_greater_than_9(self, data_pack):
+        coordinates = []
+        for line_index in range(len(data_pack)):
+            for value_index in range(len(data_pack[line_index])):
+                if data_pack[line_index][value_index] > 9:
+                    coordinates.append([line_index, value_index])
+        return coordinates
+
+    # -=-=-=-=-=- Day 12 -=-=-=-=-=-
+
+    def get_data_for_day12(self, filename):
+        paths = []
+        caves = set()
+        paths_dict = {}
+        f = open(filename)
+        for line in f:
+            link = line.strip().split("-")
+            if link[0] in ['start', 'end']:
+                if link[0] == 'start':
+                    paths.append(link)
+                if link[0] == 'end':
+                    paths.append([link[1], link[0]])
+            elif link[1] in ['start', 'end']:
+                if link[1] == 'start':
+                    paths.append([link[1], link[0]])
+                if link[1] == 'end':
+                    paths.append(link)
+            else:
+                paths.append([link[0], link[1]])
+                paths.append([link[1], link[0]])
+            caves.add(link[0])
+            caves.add(link[1])
+
+        for cave in caves:
+            routes = []
+            for path in paths:
+                if path[0] == cave:
+                    routes.append(path[1])
+            paths_dict[cave] = routes
+        return paths_dict
+
+    def day12(self, filename):
+        paths = self.get_data_for_day12(filename)
+        # pprint(paths)
+        found_paths = []
+        for i in range(500000):
+            a_path = self.make_a_path(paths)
+            if a_path not in found_paths:
+                found_paths.append(a_path)
+
+        smol_caves = []
+        for path in found_paths:
+            for cave in path.split(","):
+                if cave not in ['start', 'end'] and cave == cave.lower() and cave not in smol_caves:
+                    smol_caves.append(cave)
+
+        illegal_paths = []
+        for path in found_paths:
+            for cave in smol_caves:
+                if path.count(cave) > 1 and path not in illegal_paths:
+                    illegal_paths.append(path)
+
+        # print(illegal_paths)
+
+        for i in illegal_paths:
+            found_paths.remove(i)
+
+        return found_paths
+
+    def make_a_path(self, paths):
+        one_path = ['start']
+        possible_values = paths.get('start')
+
+        while 'end' not in one_path:
+            next_key = choice(possible_values)
+            one_path.append(next_key)
+            possible_values = paths[next_key]
+
+        return ','.join(one_path)
+
+    # -=-=-=-=-=- Day 12 -=-=-=-=-=-
+
+    def get_data_for_day13(self, filename):
+        data_blob = ""
+        f = open(filename)
+        for line in f:
+            data_blob += line
+
+        dots = []
+        two_blobs = data_blob.split("\n\n")
+        for line in two_blobs[0].split("\n"):
+            line_parts = line.split(",")
+            dots.append([int(line_parts[0]), int(line_parts[1])])
+
+        folding_instructions = []
+        for line in two_blobs[1].split("\n"):
+            line_parts = line.replace("fold along ", "").split("=")
+            folding_instructions.append([line_parts[0], int(line_parts[1])])
+        return dots, folding_instructions
+
+    def transparent_paper_folding(self, filename):
+        """
+        >>> elf_help = ElfSub()
+        >>> a = elf_help.transparent_paper_folding('data/day13.data')
+        >>> print(a.strip())
+        ##    ##      ####  ######    ##    ##  ########  ##    ##  ######      ####
+        ##  ##          ##  ##    ##  ##  ##    ##        ##    ##  ##    ##  ##    ##
+        ####            ##  ######    ####      ######    ##    ##  ######    ##
+        ##  ##          ##  ##    ##  ##  ##    ##        ##    ##  ##    ##  ##  ####
+        ##  ##    ##    ##  ##    ##  ##  ##    ##        ##    ##  ##    ##  ##    ##
+        ##    ##    ####    ######    ##    ##  ########    ####    ######      ######
+        """
+        dots, folding_instructions = self.get_data_for_day13(filename)
+        grid_map = self.put_dots_on_page(dots)
+        for each_fold in folding_instructions:
+            grid_map = self.fold_it(grid_map, each_fold[0], each_fold[1])
+        # Answer is backwards so, I'm just going to make it print out nice:
+        unlock_code = ""
+        for each_row in grid_map:
+            flipped_row = "".join(each_row[::-1])
+            remove_noise = flipped_row.replace(".", "  ").replace("#", "##")
+            unlock_code += f"{remove_noise.strip()}\n"
+        return unlock_code
+
+    def put_dots_on_page(self, dots):
+        x_values = []
+        y_values = []
+        for dot in dots:
+            x_values.append(dot[1])
+            y_values.append(dot[0])
+        x_dimension = max(x_values)
+        y_dimension = max(y_values)
+
+        grid_map = []
+        for dd in range(x_dimension + 1):
+            grid_map.append(['.'] * (y_dimension + 1))
+
+        for coord in dots:
+            grid_map[coord[1]][coord[0]] = "#"
+
+        return grid_map
+
+    def fold_it(self, grid_map, y_or_x, index_):
+        if y_or_x == 'y':
+            above_the_fold = grid_map[:index_]
+            below_the_fold = grid_map[index_ + 1:]
+            for lower_row in range(len(below_the_fold)):
+                row_index_above = -1 if lower_row == 0 else (-lower_row - 1)
+                new_above_row = self.merge_2_rows(
+                    above_the_fold[row_index_above], below_the_fold[lower_row])
+                above_the_fold[row_index_above] = new_above_row
+            return above_the_fold
+        else:
+            left_side = []
+            right_side = []
+            for each_row in grid_map:
+                left_side.append(each_row[:index_])
+                right_side.append(each_row[index_ + 1:])
+            for each_row in range(len(right_side)):
+                new_right_row = []
+                for hh in range(len(right_side[0])):
+                    left_column_index = -1 if hh == 0 else (-hh - 1)
+                    if right_side[each_row][hh] == "#" or (
+                            left_side[each_row][left_column_index] == "#"):
+                        new_right_row.append("#")
+                    else:
+                        new_right_row.append(".")
+                right_side[each_row] = new_right_row
+            return right_side
+
+    def merge_2_rows(self, line_a, line_b):
+        merged_row = []
+        for jj in range(max(len(line_a), len(line_b))):
+            if line_a[jj] == "#" or line_b[jj] == "#":
+                merged_row.append("#")
+            else:
+                merged_row.append(".")
+        return merged_row
+
 
 if __name__ == "__main__":
     elf_help = ElfSub()
-    total_points, incomplete_lines = elf_help.syntax_checker('data/day10.data')
-    total_score = elf_help.autocomplete_tool(incomplete_lines)
-    print(total_score)
+    unlock_code = elf_help.transparent_paper_folding('data/day13.data')
