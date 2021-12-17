@@ -21,6 +21,9 @@ class ElfSub:
     im_going_critical = []
     i_have_been_served = []
 
+    cave_map = {}
+    cave_paths = []
+
     def __init__(self):
         """ Might init instance variables in the future: self.things = things """
         self.first_illegal_char = None
@@ -1035,14 +1038,16 @@ class ElfSub:
         return paths_dict
 
     def day12(self, filename):
-        paths = self.get_data_for_day12(filename)
-        # pprint(paths)
+        self.cave_map = self.get_data_for_day12(filename)
+        print(self.cave_map)
         found_paths = []
-        for i in range(500000):
-            a_path = self.make_a_path(paths)
-            if a_path not in found_paths:
-                found_paths.append(a_path)
+        # for i in range(2):
+        count = self.find_all_paths('start', ['start'])
+        # if a_path not in found_paths:
+        #    found_paths.append(a_path)
+        # print(count)
 
+        """
         smol_caves = []
         for path in found_paths:
             for cave in path.split(","):
@@ -1060,7 +1065,19 @@ class ElfSub:
         for i in illegal_paths:
             found_paths.remove(i)
 
-        return found_paths
+        return found_paths"""
+        return count
+
+    def find_all_paths(self, current_node, established_path):
+
+        for next_cave in self.cave_map[current_node]:
+
+            if next_cave not in established_path:
+                self.find_all_paths(next_cave, established_path.append(next_cave))
+            else:
+                pass
+
+        return self.cave_paths
 
     def make_a_path(self, paths):
         one_path = ['start']
@@ -1073,7 +1090,7 @@ class ElfSub:
 
         return ','.join(one_path)
 
-    # -=-=-=-=-=- Day 12 -=-=-=-=-=-
+    # -=-=-=-=-=- Day 13 -=-=-=-=-=-
 
     def get_data_for_day13(self, filename):
         data_blob = ""
@@ -1172,7 +1189,219 @@ class ElfSub:
                 merged_row.append(".")
         return merged_row
 
+    # -=-=-=-=-=- Day 14 -=-=-=-=-=-
+
+    def get_data_for_day14(self, filename):
+        data = {}
+        f = open(filename)
+        for line in f:
+            line_pieces = line.strip().split(' -> ')
+            data[line_pieces[0]] = line_pieces[1]
+        return data
+
+    def polymerization(self, filename, seed, growth_cycles):
+        """
+        After step 5, it has length 97; After step 10, it has length 3073.
+        After step 10, B occurs 1749 times, C occurs 298 times, H occurs 161 times, and N occurs 865 times;
+        taking the quantity of the most common element (B, 1749) and subtracting the quantity
+        of the least common element (H, 161) produces 1749 - 161 = 1588.
+        :param filename:
+        :param seed:
+        :param growth_cycles:
+        :return:
+        """
+        pair_map = self.get_data_for_day14(filename)
+
+        polymer_string = seed
+        # polymer_counts = self.create_polymer_counts(polymer_string)
+        # print(polymer_counts)
+        for num_loop in range(growth_cycles):
+            polymer_string, _, _ = self.insert_between_each(polymer_string, pair_map)
+            # polymer_counts = self.create_polymer_counts(polymer_string)
+            print(num_loop)
+        # print(polymer_counts)
+        """
+        polymer_string = seed
+        polymer_counts = self.create_polymer_counts(polymer_string)
+        print(polymer_counts)
+        for num_loop in range(5):
+            polymer_string, _, _ = self.insert_between_each(polymer_string, pair_map)
+            polymer_counts = self.exponential_sizes(polymer_counts, pair_map)
+            print(polymer_counts)"""
+
+        score = self.score_the_polymer(polymer_string, pair_map)
+        return score
+
+    def create_polymer_counts(self, polymer_string):
+        polymer_counts = {}
+        for index_ in range(len(polymer_string) - 1):
+            before_letter = polymer_string[index_]
+            after_letter = polymer_string[index_ + 1]
+            polymer_counts[before_letter + after_letter] = polymer_counts.get(
+                before_letter + after_letter, 0) + 1
+        return polymer_counts
+
+    def exponential_sizes(self, polymer_counts, pair_map):
+        new_polymer_counts = {}
+        for pair in polymer_counts:
+            _, component1, component2 = self.insert_between_each(pair, pair_map)
+            new_polymer_counts[component1] = new_polymer_counts.get(component1, 0) + 1
+            new_polymer_counts[component2] = new_polymer_counts.get(component2, 0) + 1
+        for key in polymer_counts:
+            # if key in polymer_counts and key in new_polymer_counts:
+            new_polymer_counts[key] += polymer_counts.get(key, 0)
+        return new_polymer_counts
+
+    @staticmethod
+    def insert_between_each(polymer_string, pair_map):
+        before_letter = ""
+        middle_letter = ""
+        after_letter = ""
+        new_polymer_string = ""
+        for index_ in range(len(polymer_string) - 1):
+            before_letter = polymer_string[index_]
+            after_letter = polymer_string[index_ + 1]
+            middle_letter = pair_map[f"{polymer_string[index_]}{polymer_string[index_ + 1]}"]
+            new_polymer_string += before_letter + middle_letter
+        new_polymer_string += after_letter
+
+        return new_polymer_string, before_letter + middle_letter, middle_letter + after_letter
+
+    @staticmethod
+    def score_the_polymer(polymer_string, pair_map):
+        counts = []
+        for letter in pair_map.values():
+            counts.append(polymer_string.count(letter))
+        return max(counts) - min(counts)
+
+    # -=-=-=-=-=- Day 15: Maze traversal in a scored grid -=-=-=-=-=-
+
+    # -=-=-=-=-=- Day 16: Just noodling around -=-=-=-=-=-
+    def day16(self):
+        packet = 'D2FE28'
+        hexstring = "0110"
+        print(bytes.fromhex(hexstring).decode('utf-16'))
+        print(bytes.fromhex(hexstring).decode("ascii"))  # D2
+        self.hex_2_bin('D2FE28')  # next cluster
+        print('110100101111111000101000')  # Same as the example
+        self.bin_2_int("0110")  # version 6
+        self.bin_2_int("100")  # type 4
+        self.bin_2_int("0111" + "1110" + "0101")  # 3 packets form the number 2021
+        self.bin_2_int("011111100101")  # 2021
+        self.hex_2_bin('38006F45291200')
+        print(self.hex_2_bin(
+            '38006F45291200') == b'00111000000000000110111101000101001010010001001000000000')  # False
+        cluster = str(self.hex_2_bin('38006F45291200'))
+        print(cluster)
+        self.bin_2_int("0" + cluster[:3])  # version 1
+        self.bin_2_int("0" + cluster[3:6])  # type 6
+        self.bin_2_int('000000000011011')  # contain the length of the sub-packets in bits, 27.
+        self.bin_2_int('11010001010')  # should be 10
+        self.bin_2_int('0101001000100100')  # should be 20
+        self.hex_2_bin('8A004A801A8002F478')
+
+    def hex_2_bin(self, hex_string):
+        a_bin = bin(int(hex_string, 16))[2:]
+        print(a_bin)
+        return a_bin
+
+    def bin_2_int(self, binstring):
+        an_int = int(binstring, 2)
+        print(an_int)
+        return an_int
+
+    # -=-=-=-=-=- Day 17 -=-=-=-=-=-
+
+    def day17(self, x_range, y_range, velocity_range):
+        """
+        >>> elf_help = ElfSub()
+        >>> elf_help.day17(x_range=[20, 30], y_range=[-10, -5], velocity_range=100)
+        {'maximum_y_pos': 45, 'x_initial_vel': 6, 'y_initial_vel': 9, 'num_velocity_winners': 112}
+        """
+        best_so_far = {'maximum_y_pos': 0, 'x_initial_vel': 0, 'y_initial_vel': 0}
+        velocity_winners = []
+        for x_initial_vel in range(-velocity_range, velocity_range):
+            for y_initial_vel in range(-velocity_range, velocity_range):
+                trench_hits, coordinates_passed_thru = self.calculate_one_throw(
+                    x_initial_vel, y_initial_vel, x_range, y_range)
+                if trench_hits:
+                    for coordinate in coordinates_passed_thru:
+                        maximum_y_pos = coordinate[1]
+                        if maximum_y_pos > best_so_far['maximum_y_pos']:
+                            best_so_far['maximum_y_pos'] = maximum_y_pos
+                            best_so_far['x_initial_vel'] = x_initial_vel
+                            best_so_far['y_initial_vel'] = y_initial_vel
+                    velocity_winners.append([x_initial_vel, y_initial_vel])
+        best_so_far['num_velocity_winners'] = len(velocity_winners)
+        return best_so_far
+
+    def calculate_one_throw(self, x_initial_vel, y_initial_vel, x_range, y_range):
+        coordinates_passed_thru = self.projectile_loop(
+            x_initial_vel, y_initial_vel, x_range, y_range)
+        trench_hits = self.check_for_trench_hits(coordinates_passed_thru, x_range, y_range)
+        return trench_hits, coordinates_passed_thru
+
+    def projectile_loop(self, x_initial_vel, y_initial_vel, x_range, y_range):
+        overshoot = 100
+        coordinates_passed_thru = [[0, 0]]
+        x_velocity = x_initial_vel
+        y_velocity = y_initial_vel
+        x_pos = coordinates_passed_thru[-1][0]
+        y_pos = coordinates_passed_thru[-1][1]
+        while x_pos < x_range[1] + overshoot and y_pos > y_range[
+            1] - overshoot:  # after that, you've missed it
+            last_coordinate_visited = coordinates_passed_thru[-1]
+            x_pos, x_velocity = self.x_dimension_throw(
+                x_pos=last_coordinate_visited[0], x_velocity=x_velocity)
+            y_pos, y_velocity = self.y_dimension_throw(
+                y_pos=last_coordinate_visited[1], y_velocity=y_velocity)
+            coordinates_passed_thru.append([x_pos, y_pos])
+            # print(coordinates_passed_thru)
+        return coordinates_passed_thru
+
+    def check_for_trench_hits(self, coordinates_passed_thru, x_range, y_range):
+        hits = []
+        for one_coord in coordinates_passed_thru:
+            if self.trench_hit(one_coord, x_range, y_range):
+                hits.append(one_coord)
+        return hits
+
+    def trench_hit(self, one_coordinates, x_range, y_range):
+        x_pos = one_coordinates[0]
+        y_pos = one_coordinates[1]
+        if x_range[0] <= x_pos <= x_range[1] and y_range[0] <= y_pos <= y_range[1]:
+            return True
+        else:
+            return False
+
+    def x_dimension_throw(self, x_pos, x_velocity):
+        """The probe's x position increases by its x velocity.
+        Due to drag, the probe's x velocity changes by 1 toward the value 0;
+            that is, it decreases by 1 if it is greater than 0,
+            increases by 1 if it is less than 0,
+            or does not change if it is already 0.
+        """
+        x_pos += x_velocity
+        if x_velocity > 0:
+            x_velocity -= 1
+        elif x_velocity < 0:
+            x_velocity += 1
+        elif x_velocity == 0:
+            x_velocity += 0
+        return x_pos, x_velocity
+
+    def y_dimension_throw(self, y_pos, y_velocity):
+        """
+        The probe's y position increases by its y velocity.
+        Due to gravity, the probe's y velocity decreases by 1.
+        """
+        y_pos += y_velocity
+        y_velocity -= 1
+        return y_pos, y_velocity
+
 
 if __name__ == "__main__":
     elf_help = ElfSub()
-    unlock_code = elf_help.transparent_paper_folding('data/day13.data')
+    _, num, all_hits = elf_help.day17(x_range=[20, 30], y_range=[-10, -5], velocity_range=100)
+    # _, num, all_hits = elf_help.day17(x_range=[185, 221], y_range=[-122, -74], velocity_range=400)
+    print(num, all_hits)

@@ -1,11 +1,5 @@
 .idea/
 __pycache__/
-data/day14*.data
-data/day15*.data
-data/day16*.data
-data/day17*.data
-data/day18*.data
-data/day19*.data
 data/day20*.data
 data/day21*.data
 data/day22*.data
