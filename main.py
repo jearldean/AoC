@@ -24,6 +24,9 @@ class ElfSub:
     cave_map = {}
     cave_paths = []
 
+    current_roll_value = 0
+    roll_counter = 0
+
     def __init__(self):
         """ Might init instance variables in the future: self.things = things """
         self.first_illegal_char = None
@@ -1399,9 +1402,68 @@ class ElfSub:
         y_velocity -= 1
         return y_pos, y_velocity
 
+    # -=-=-=-=-=- Day 18 -=-=-=-=-=-
+
+    # -=-=-=-=-=- Day 19 -=-=-=-=-=-
+
+    # -=-=-=-=-=- Day 20 -=-=-=-=-=-
+
+    # -=-=-=-=-=- Day 21 -=-=-=-=-=-
+
+    def dirac_dice(self, player_1_position, player_2_position):
+        """
+        >>> elf_help = ElfSub()
+        >>> elf_help.dirac_dice(4, 8)
+        739785
+        >>> elf_help.dirac_dice(2, 10)
+        571032
+        """
+        self.current_roll_value = 0
+        self.roll_counter = 0
+        player_1_score = 0
+        player_2_score = 0
+        goal_score = 1000
+
+        while player_1_score < goal_score and player_2_score < goal_score:
+            roll_total = self.roll_deterministic_dice()
+            player_1_position = self.move_player_pawn(player_1_position, roll_total)
+            player_1_score += player_1_position
+            # print(f"Player 1 rolls {roll_total} and moves to space {player_1_position} for a total score of {player_1_score}.")
+            if player_1_score < goal_score:
+                roll_total = self.roll_deterministic_dice()
+                player_2_position = self.move_player_pawn(player_2_position, roll_total)
+                player_2_score += player_2_position
+                # print(f"Player 2 rolls {roll_total} and moves to space {player_2_position} for a total score of {player_2_score}.")
+
+        return min(player_1_score, player_2_score) * self.roll_counter
+
+    def move_player_pawn(self, start_position, roll_total):
+        new_position = start_position + roll_total
+        # The board resets at 10, the new position is the ones' place value:
+        board_space = int(str(new_position)[-1])
+        if board_space == 0:  # There is no zero'th space, it's space 10.
+            board_space = 10
+        return board_space
+
+    def roll_deterministic_dice(self):
+        rolls = [self.current_roll_value + 1,
+                 self.current_roll_value + 2,
+                 self.current_roll_value + 3]
+        self.current_roll_value = rolls[-1]
+        self.roll_counter += 3
+        roll_total = sum(rolls)
+        return roll_total
+
+    def roll_quantum_die(self):
+        return [1, 2, 3]
+
+    def play_with_quantum_dice(self, player_1_position, player_2_position):
+        player_1_score = 0
+        player_2_score = 0
+        goal_score = 21
+
 
 if __name__ == "__main__":
     elf_help = ElfSub()
-    _, num, all_hits = elf_help.day17(x_range=[20, 30], y_range=[-10, -5], velocity_range=100)
-    # _, num, all_hits = elf_help.day17(x_range=[185, 221], y_range=[-122, -74], velocity_range=400)
-    print(num, all_hits)
+    answer = elf_help.play_with_quantum_dice(4, 8)
+    print(answer)

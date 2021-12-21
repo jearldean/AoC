@@ -1,8 +1,11 @@
 .idea/
 __pycache__/
+data/day18*.data
+data/day19*.data
 data/day20*.data
 data/day21*.data
 data/day22*.data
 data/day23*.data
 data/day24*.data
 data/day25*.data
+*.textClipping
